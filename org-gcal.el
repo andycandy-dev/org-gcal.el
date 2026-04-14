@@ -454,6 +454,11 @@ CALENDAR-ID-FILE is a cons in ‘org-gcal-fetch-file-alist’, for which see."
      (deferred:nextc it
                      (lambda (entries)
                        (org-gcal--sync-update-entries calendar-id entries skip-export)))
+     (deferred:nextc it
+                     (lambda (_)
+                       (let ((buf (find-buffer-visiting calendar-file)))
+                         (when (and buf (buffer-modified-p buf))
+                           (with-current-buffer buf (save-buffer))))))
      ;; Retrieve the next page of results if needed.
      (deferred:nextc it
                      (lambda (_)
@@ -492,6 +497,11 @@ CALENDAR-ID-FILE is a cons in ‘org-gcal-fetch-file-alist’, for which see."
      (deferred:nextc it
                      (lambda (entries)
                        (org-gcal--sync-update-entries calendar-id entries skip-export)))
+     (deferred:nextc it
+                     (lambda (_)
+                       (let ((buf (find-buffer-visiting calendar-file)))
+                         (when (and buf (buffer-modified-p buf))
+                           (with-current-buffer buf (save-buffer))))))
      ;; Retrieve the next page of results if needed.
      (deferred:nextc it
                      (lambda (_)
@@ -520,7 +530,12 @@ CALENDAR-ID-FILE is a cons in ‘org-gcal-fetch-file-alist’, for which see."
                                                      events nil nil nil nil)))
      (deferred:nextc it
                      (lambda (entries)
-                       (org-gcal--sync-update-entries calendar-id entries skip-export))))))
+                       (org-gcal--sync-update-entries calendar-id entries skip-export)))
+     (deferred:nextc it
+                     (lambda (_)
+                       (let ((buf (find-buffer-visiting calendar-file)))
+                         (when (and buf (buffer-modified-p buf))
+                           (with-current-buffer buf (save-buffer)))))))))
 
 (defun org-gcal--sync-request-events
     (calendar-id page-token up-time down-time)
@@ -728,7 +743,8 @@ Any parent recurring events are appended in-place to the list PARENT-EVENTS."
              (org-entry-put (point) org-gcal-managed-property
                             org-gcal-managed-newly-fetched-mode)))
          nil)))
-     collect it)))
+     collect it)
+    (when (buffer-modified-p) (save-buffer))))
 
 (defun org-gcal--sync-update-entries (calendar-id entries skip-export)
   "Update headlines given by ‘org-gcal--event-entry’ ENTRIES.
