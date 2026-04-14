@@ -375,6 +375,10 @@ SKIP-EXPORT.  Set SILENT to non-nil to inhibit notifications."
                         (deferred:succeed nil)
                         (deferred:nextc it
                                         (lambda (_)
+                                          (let ((buf (find-buffer-visiting
+                                                      (cdr calendar-id-file))))
+                                            (when (and buf (buffer-modified-p buf))
+                                              (with-current-buffer buf (save-buffer))))
                                           (org-gcal--notify "Completed event fetching ."
                                                             (concat "Events fetched into\n"
                                                                     (cdr calendar-id-file))
@@ -395,7 +399,11 @@ SKIP-EXPORT.  Set SILENT to non-nil to inhibit notifications."
                            (org-generic-id-files))))))
      :finally
      (lambda ()
-       (org-gcal--sync-unlock)))))
+       (org-gcal--sync-unlock)
+       (dolist (cal org-gcal-fetch-file-alist)
+         (let ((buf (find-buffer-visiting (cdr cal))))
+           (when (and buf (buffer-modified-p buf))
+             (with-current-buffer buf (save-buffer)))))))))
 
 
 (defun org-gcal--sync-calendar (calendar-id-file skip-export silent
@@ -814,7 +822,9 @@ to “org”."
      :finally
      (lambda ()
        (org-generic-id-update-id-locations org-gcal-entry-id-property)
-       (org-gcal--sync-unlock)))))
+       (org-gcal--sync-unlock)
+       (when (and (buffer-file-name) (buffer-modified-p))
+         (save-buffer))))))
 
 (defmacro org-gcal--with-point-at-no-widen (pom &rest body)
   "Move to buffer and point of point-or-marker POM for the duration of BODY.
